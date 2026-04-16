@@ -1,0 +1,13 @@
+{
+  "name": "BedrockAchiever — MCBE 도전과제 복구소",
+  "short_name": "BedrockAchiever",
+  "description": "마인크래프트 배드락 도전과제 복구 도구",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0E1A",
+  "theme_color": "#0A0E1A",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

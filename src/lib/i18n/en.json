@@ -1,0 +1,58 @@
+{
+  "header": {
+    "home": "Home",
+    "restore": "Restore",
+    "guide": "Guide",
+    "faq": "FAQ",
+    "about": "About"
+  },
+  "dropzone": {
+    "title": "Drag your .mcworld files here",
+    "subtitle": "Or use the buttons below to select files/folders (multiple OK)",
+    "selectFiles": "Select Files",
+    "selectFolder": "Select Folder",
+    "privacyNote": "Files are processed entirely in your browser and never sent to any server",
+    "invalidFile": "Only .mcworld files are supported",
+    "analyzing": "Analyzing {name}...",
+    "added": "{name} added",
+    "parseError": "Failed to parse {name}: {error}",
+    "folderUnsupported": "Folder picker unsupported — use Chrome/Edge or select files directly",
+    "folderError": "Folder access failed",
+    "noWorldsInFolder": "No .mcworld files found in that folder"
+  },
+  "world": {
+    "achievementsActive": "Achievements Active",
+    "achievementsDisabled": "Achievements Disabled",
+    "fixed": "Fixed"
+  },
+  "restore": {
+    "title": "Achievement Restorer",
+    "subtitle": "Upload .mcworld files to auto-analyze, then restore achievements for selected worlds",
+    "worldCount": "{total} worlds,",
+    "selected": "{count} selected",
+    "selectAll": "Select All",
+    "deselect": "Deselect",
+    "clearAll": "Clear All",
+    "downloadAll": "Download All (ZIP)",
+    "fixing": "Fixing...",
+    "fixN": "Fix {count} worlds",
+    "selectFirst": "Select worlds to restore",
+    "fixDone": "{count} worlds fixed!",
+    "downloadOne": "Download this world"
+  },
+  "hero": {
+    "badge": "Supports Minecraft Bedrock Edition 1.21.100",
+    "title1": "Achievements,",
+    "title2": " restored instantly.",
+    "desc": "Restore achievements for Bedrock worlds disabled by Creative mode or cheats. All processing happens in your browser — 100% safe.",
+    "cta": "Start Restoring"
+  },
+  "features": {
+    "local": { "title": "100% Local Processing", "desc": "All NBT parsing and modification happens in your browser. World files never leave your device." },
+    "batch": { "title": "Blazing Fast Batch", "desc": "Drag & drop multiple .mcworld files to restore them all at once." },
+    "nbt": { "title": "Precise NBT Editing", "desc": "Only modifies hasBeenLoadedInCreative, cheatsEnabled, and commandsEnabled flags." },
+    "safe": { "title": "Safe & Non-Destructive", "desc": "Existing achievements and world data (db/) are never touched." },
+    "offline": { "title": "Works Offline", "desc": "Progressive Web App — works without internet after first visit." },
+    "free": { "title": "Free & Open Source", "desc": "MIT License. No signup, no tracking, no ads." }
+  }
+}

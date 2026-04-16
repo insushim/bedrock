@@ -7,12 +7,12 @@
     "about": "소개"
   },
   "dropzone": {
-    "title": ".mcworld 파일을 여기에 드래그하세요",
-    "subtitle": "또는 아래 버튼으로 파일·폴더를 선택 (여러 개 가능)",
+    "title": ".mcworld 또는 .zip 파일을 여기에 드래그하세요",
+    "subtitle": "또는 아래 버튼으로 파일을 선택 (여러 개 가능)",
     "selectFiles": "파일 선택",
     "selectFolder": "폴더 선택",
     "privacyNote": "파일은 브라우저에서만 처리되며 서버로 전송되지 않습니다",
-    "invalidFile": ".mcworld 파일만 업로드 가능합니다",
+    "invalidFile": ".mcworld 또는 .zip 파일만 업로드 가능합니다",
     "analyzing": "{name} 분석 중...",
     "added": "{name} 추가됨",
     "parseError": "{name} 파싱 실패: {error}",

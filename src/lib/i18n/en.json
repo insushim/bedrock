@@ -7,12 +7,12 @@
     "about": "About"
   },
   "dropzone": {
-    "title": "Drag your .mcworld files here",
-    "subtitle": "Or use the buttons below to select files/folders (multiple OK)",
+    "title": "Drag your .mcworld or .zip files here",
+    "subtitle": "Or use the button below to select files (multiple OK)",
     "selectFiles": "Select Files",
     "selectFolder": "Select Folder",
     "privacyNote": "Files are processed entirely in your browser and never sent to any server",
-    "invalidFile": "Only .mcworld files are supported",
+    "invalidFile": "Only .mcworld or .zip files are supported",
     "analyzing": "Analyzing {name}...",
     "added": "{name} added",
     "parseError": "Failed to parse {name}: {error}",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Upload, FolderOpen, FileArchive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -11,11 +11,19 @@ import { useT } from '@/lib/i18n/useT';
 export function DropZone() {
   const addWorld = useWorldStore((s) => s.addWorld);
   const [active, setActive] = useState(false);
+  const [hasFolderPicker, setHasFolderPicker] = useState(false);
   const t = useT();
+
+  useEffect(() => {
+    setHasFolderPicker('showDirectoryPicker' in window);
+  }, []);
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
-      const arr = Array.from(files).filter((f) => f.name.toLowerCase().endsWith('.mcworld'));
+      const name = (f: File) => f.name.toLowerCase();
+      const arr = Array.from(files).filter(
+        (f) => name(f).endsWith('.mcworld') || name(f).endsWith('.zip'),
+      );
 
       if (arr.length === 0) {
         toast.error(t('dropzone.invalidFile'));
@@ -117,7 +125,7 @@ export function DropZone() {
           <input
             type="file"
             multiple
-            accept=".mcworld"
+            accept=".mcworld,.zip,application/zip,application/x-zip-compressed,application/octet-stream"
             className="hidden"
             onChange={onFileSelect}
           />
@@ -127,13 +135,15 @@ export function DropZone() {
           </span>
         </label>
 
-        <button
-          onClick={onFolderSelect}
-          className="inline-flex items-center gap-2 rounded-xl bg-bg-elevated px-6 py-3 font-semibold transition hover:bg-bg-elevated/80"
-        >
-          <FolderOpen className="size-5" />
-          {t('dropzone.selectFolder')}
-        </button>
+        {hasFolderPicker && (
+          <button
+            onClick={onFolderSelect}
+            className="inline-flex items-center gap-2 rounded-xl bg-bg-elevated px-6 py-3 font-semibold transition hover:bg-bg-elevated/80"
+          >
+            <FolderOpen className="size-5" />
+            {t('dropzone.selectFolder')}
+          </button>
+        )}
       </div>
 
       <p className="mt-6 text-xs text-text-muted">{t('dropzone.privacyNote')}</p>

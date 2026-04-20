@@ -2,8 +2,8 @@
  * .mcworld ZIP 파일 파싱 및 월드 정보 추출
  */
 import { unzip, zip } from 'fflate';
-import { parseLevelDat, writeLevelDat } from '@/lib/nbt/bedrock-nbt';
-import { getAchievementStatus, restoreAchievements, type AchievementStatus } from './flags';
+import { parseLevelDat, patchAchievementFlags } from '@/lib/nbt/bedrock-nbt';
+import { getAchievementStatus, type AchievementStatus } from './flags';
 import type { NBTData, CompoundTag, Tag } from 'nbtify';
 
 export interface WorldInfo {
@@ -117,22 +117,17 @@ export async function parseMcWorld(file: File): Promise<WorldInfo> {
 
 /**
  * 월드 수정 및 재패킹
+ * level.dat을 NBT 트리로 재직렬화하면 Bedrock 검증이 실패함("세계를 불러올 수 없습니다").
+ * 대신 원본 바이트에서 4개 플래그 값만 in-place 패치 → 파일 크기·구조 완전 보존.
  */
 export async function fixAndRepackWorld(world: WorldInfo): Promise<Blob> {
-  // 1. NBT 수정
-  restoreAchievements(world.nbtData);
-
-  // 2. level.dat 다시 직렬화
-  const newLevelDat = await writeLevelDat(world.nbtData, world.storageVersion);
-
-  // 3. zipFiles에서 level.dat 교체
   const newFiles = { ...world.zipFiles };
   const levelDatKey = Object.keys(newFiles).find(
     (k) => k.endsWith('level.dat') && !k.endsWith('level.dat_old'),
   )!;
-  newFiles[levelDatKey] = newLevelDat;
 
-  // 4. ZIP 재패킹
+  newFiles[levelDatKey] = patchAchievementFlags(newFiles[levelDatKey]);
+
   const zipBuf = await zipAsync(newFiles);
   return new Blob([new Uint8Array(zipBuf)] as BlobPart[], { type: 'application/octet-stream' });
 }

@@ -115,19 +115,50 @@ export async function parseMcWorld(file: File): Promise<WorldInfo> {
   };
 }
 
+function isJunkPath(p: string): boolean {
+  const base = p.split('/').pop() ?? '';
+  return (
+    p.startsWith('__MACOSX/') ||
+    p.includes('/__MACOSX/') ||
+    base === '.DS_Store' ||
+    base === 'Thumbs.db' ||
+    base === 'desktop.ini' ||
+    base.startsWith('._')
+  );
+}
+
 /**
  * 월드 수정 및 재패킹
  * level.dat을 NBT 트리로 재직렬화하면 Bedrock 검증이 실패함("세계를 불러올 수 없습니다").
  * 대신 원본 바이트에서 4개 플래그 값만 in-place 패치 → 파일 크기·구조 완전 보존.
+ *
+ * 또한, 사용자가 월드 폴더를 통째로 압축한 .zip(예: `MyWorld/level.dat`)을 올리면
+ * level.dat이 루트가 아닌 하위에 위치해 Bedrock이 "세계를 불러올 수 없습니다"를 띄움.
+ * level.dat을 기준으로 공통 접두사를 계산해 루트로 끌어올리고 __MACOSX 등 정크를 제거.
  */
 export async function fixAndRepackWorld(world: WorldInfo): Promise<Blob> {
-  const newFiles = { ...world.zipFiles };
-  const levelDatKey = Object.keys(newFiles).find(
-    (k) => k.endsWith('level.dat') && !k.endsWith('level.dat_old'),
-  )!;
+  const srcKeys = Object.keys(world.zipFiles).filter((k) => !isJunkPath(k));
 
-  newFiles[levelDatKey] = patchAchievementFlags(newFiles[levelDatKey]);
+  const levelDatKey = srcKeys.find((k) => {
+    const base = k.split('/').pop();
+    return base === 'level.dat';
+  });
+  if (!levelDatKey) throw new Error('level.dat을 찾을 수 없습니다');
 
-  const zipBuf = await zipAsync(newFiles);
+  const lastSlash = levelDatKey.lastIndexOf('/');
+  const prefix = lastSlash === -1 ? '' : levelDatKey.slice(0, lastSlash + 1);
+
+  const out: Record<string, Uint8Array> = {};
+  for (const k of srcKeys) {
+    if (prefix && !k.startsWith(prefix)) continue;
+    const newKey = k.slice(prefix.length);
+    if (!newKey) continue;
+    out[newKey] = world.zipFiles[k];
+  }
+
+  const rootLevelDatKey = levelDatKey.slice(prefix.length);
+  out[rootLevelDatKey] = patchAchievementFlags(out[rootLevelDatKey]);
+
+  const zipBuf = await zipAsync(out);
   return new Blob([new Uint8Array(zipBuf)] as BlobPart[], { type: 'application/octet-stream' });
 }

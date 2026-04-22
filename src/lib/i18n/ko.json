@@ -18,7 +18,7 @@
     "parseError": "{name} 파싱 실패: {error}",
     "folderUnsupported": "이 브라우저는 폴더 선택을 지원하지 않습니다. 크롬/엣지를 사용하거나 파일을 직접 선택해주세요",
     "folderError": "폴더 접근에 실패했습니다",
-    "noWorldsInFolder": "폴더에서 .mcworld 파일을 찾을 수 없습니다"
+    "noWorldsInFolder": "폴더에서 월드(level.dat 포함)나 .mcworld 파일을 찾을 수 없습니다"
   },
   "world": {
     "achievementsActive": "도전과제 활성화됨",

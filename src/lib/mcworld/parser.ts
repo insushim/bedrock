@@ -8,7 +8,7 @@ import type { NBTData, CompoundTag, Tag } from 'nbtify';
 
 export interface WorldInfo {
   id: string;
-  originalFile: File;
+  sourceType: 'archive' | 'folder';
   levelName: string;
   iconDataUrl: string | null;
   lastPlayedDate: Date | null;
@@ -40,26 +40,55 @@ function getNum(tag: Tag | undefined): number {
 }
 
 export async function parseMcWorld(file: File): Promise<WorldInfo> {
-  const arrayBuf = await file.arrayBuffer();
-  const buf = new Uint8Array(arrayBuf);
-
+  const buf = new Uint8Array(await file.arrayBuffer());
   const zipFiles = await unzipAsync(buf);
+  return buildWorldInfo({
+    files: zipFiles,
+    idHint: file.name,
+    sizeBytes: file.size,
+    sourceType: 'archive',
+  });
+}
 
-  // level.dat 찾기 (루트 또는 한 단계 안쪽 폴더)
-  const levelDatKey = Object.keys(zipFiles).find(
+/**
+ * 폴더 기반 월드(비압축, minecraftWorlds/<world>/ 구조) 파싱.
+ * 호출 측이 `level.dat`, `levelname.txt`, `world_icon.jpeg`, `db/*` 등을
+ * 루트 기준 상대경로 → Uint8Array 맵으로 수집해서 넘긴다.
+ */
+export async function parseFolderWorld(
+  files: Record<string, Uint8Array>,
+  folderName: string,
+): Promise<WorldInfo> {
+  const sizeBytes = Object.values(files).reduce((s, u) => s + u.byteLength, 0);
+  return buildWorldInfo({
+    files,
+    idHint: folderName,
+    sizeBytes,
+    sourceType: 'folder',
+  });
+}
+
+async function buildWorldInfo(opts: {
+  files: Record<string, Uint8Array>;
+  idHint: string;
+  sizeBytes: number;
+  sourceType: 'archive' | 'folder';
+}): Promise<WorldInfo> {
+  const { files, idHint, sizeBytes, sourceType } = opts;
+
+  const levelDatKey = Object.keys(files).find(
     (k) => k.endsWith('level.dat') && !k.endsWith('level.dat_old'),
   );
   if (!levelDatKey) throw new Error('level.dat을 찾을 수 없습니다');
 
-  const parsed = await parseLevelDat(zipFiles[levelDatKey]);
+  const parsed = await parseLevelDat(files[levelDatKey]);
   const status = getAchievementStatus(parsed.nbtData);
 
-  // levelname.txt
-  const levelNameKey = Object.keys(zipFiles).find((k) => k.endsWith('levelname.txt'));
+  const levelNameKey = Object.keys(files).find((k) => k.endsWith('levelname.txt'));
   let levelName = 'Untitled World';
   if (levelNameKey) {
     try {
-      levelName = new TextDecoder('utf-8').decode(zipFiles[levelNameKey]).trim();
+      levelName = new TextDecoder('utf-8').decode(files[levelNameKey]).trim();
     } catch {
       /* fallback */
     }
@@ -68,11 +97,10 @@ export async function parseMcWorld(file: File): Promise<WorldInfo> {
     if (root.LevelName) levelName = String((root.LevelName as Tag).valueOf());
   }
 
-  // world_icon.jpeg
-  const iconKey = Object.keys(zipFiles).find((k) => k.endsWith('world_icon.jpeg'));
+  const iconKey = Object.keys(files).find((k) => k.endsWith('world_icon.jpeg'));
   let iconDataUrl: string | null = null;
   if (iconKey) {
-    const iconBytes = new Uint8Array(zipFiles[iconKey]);
+    const iconBytes = new Uint8Array(files[iconKey]);
     const blob = new Blob([iconBytes] as BlobPart[], { type: 'image/jpeg' });
     iconDataUrl = await new Promise<string>((resolve) => {
       const reader = new FileReader();
@@ -81,7 +109,6 @@ export async function parseMcWorld(file: File): Promise<WorldInfo> {
     });
   }
 
-  // 메타데이터 추출
   const root = parsed.nbtData.data;
   const lastPlayedTs = root.LastPlayed ? Number((root.LastPlayed as Tag).valueOf()) : null;
   const lastPlayedDate = lastPlayedTs ? new Date(lastPlayedTs * 1000) : null;
@@ -99,8 +126,8 @@ export async function parseMcWorld(file: File): Promise<WorldInfo> {
   const gameType = getNum(root.GameType);
 
   return {
-    id: `${file.name}-${crypto.randomUUID()}`,
-    originalFile: file,
+    id: `${idHint}-${crypto.randomUUID()}`,
+    sourceType,
     levelName,
     iconDataUrl,
     lastPlayedDate,
@@ -109,8 +136,8 @@ export async function parseMcWorld(file: File): Promise<WorldInfo> {
     gameType,
     status,
     nbtData: parsed.nbtData,
-    zipFiles,
-    sizeBytes: file.size,
+    zipFiles: files,
+    sizeBytes,
     storageVersion: parsed.header.storageVersion,
   };
 }

@@ -18,7 +18,7 @@
     "parseError": "Failed to parse {name}: {error}",
     "folderUnsupported": "Folder picker unsupported — use Chrome/Edge or select files directly",
     "folderError": "Folder access failed",
-    "noWorldsInFolder": "No .mcworld files found in that folder"
+    "noWorldsInFolder": "No worlds (level.dat) or .mcworld files found in that folder"
   },
   "world": {
     "achievementsActive": "Achievements Active",

@@ -4,9 +4,27 @@ import { useCallback, useState, useEffect } from 'react';
 import { Upload, FolderOpen, FileArchive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { parseMcWorld } from '@/lib/mcworld/parser';
+import { parseMcWorld, parseFolderWorld } from '@/lib/mcworld/parser';
 import { useWorldStore } from '@/lib/store/world-store';
 import { useT } from '@/lib/i18n/useT';
+
+async function collectFolderFiles(
+  dirHandle: any,
+  prefix = '',
+): Promise<Record<string, Uint8Array>> {
+  const out: Record<string, Uint8Array> = {};
+  for await (const [name, h] of dirHandle.entries()) {
+    const path = prefix ? `${prefix}/${name}` : name;
+    if (h.kind === 'file') {
+      const f: File = await h.getFile();
+      out[path] = new Uint8Array(await f.arrayBuffer());
+    } else if (h.kind === 'directory') {
+      const sub = await collectFolderFiles(h, path);
+      Object.assign(out, sub);
+    }
+  }
+  return out;
+}
 
 export function DropZone() {
   const addWorld = useWorldStore((s) => s.addWorld);
@@ -70,30 +88,70 @@ export function DropZone() {
     }
     try {
       const handle = await (window as any).showDirectoryPicker();
-      const files: File[] = [];
+      const archives: File[] = [];
+      const folderWorlds: Array<{ name: string; handle: any }> = [];
+
+      // 서브폴더에 level.dat이 직접 있으면 "원본 월드 폴더"로 취급.
+      // 아니면 재귀 walk하면서 .mcworld/.zip 파일만 수집(기존 동작).
+      async function hasLevelDat(dirHandle: any): Promise<boolean> {
+        for await (const [n, h] of dirHandle.entries()) {
+          if (h.kind === 'file' && n === 'level.dat') return true;
+        }
+        return false;
+      }
 
       async function walk(dirHandle: any) {
         for await (const [name, h] of dirHandle.entries()) {
-          if (h.kind === 'file' && name.toLowerCase().endsWith('.mcworld')) {
-            files.push(await h.getFile());
+          if (h.kind === 'file') {
+            const lower = name.toLowerCase();
+            if (lower.endsWith('.mcworld') || lower.endsWith('.zip')) {
+              archives.push(await h.getFile());
+            }
           } else if (h.kind === 'directory') {
-            await walk(h);
+            if (await hasLevelDat(h)) {
+              folderWorlds.push({ name, handle: h });
+            } else {
+              await walk(h);
+            }
           }
         }
       }
 
-      await walk(handle);
-      if (files.length === 0) {
-        toast.info(t('dropzone.noWorldsInFolder'));
+      // 루트 자체가 월드 폴더인 경우도 지원 (사용자가 특정 월드 하나만 선택)
+      if (await hasLevelDat(handle)) {
+        folderWorlds.push({ name: handle.name ?? 'world', handle });
       } else {
-        handleFiles(files);
+        await walk(handle);
       }
+
+      if (archives.length === 0 && folderWorlds.length === 0) {
+        toast.info(t('dropzone.noWorldsInFolder'));
+        return;
+      }
+
+      // 비압축 폴더 월드 처리
+      for (const fw of folderWorlds) {
+        try {
+          toast.loading(t('dropzone.analyzing', { name: fw.name }), { id: fw.name });
+          const files = await collectFolderFiles(fw.handle);
+          const world = await parseFolderWorld(files, fw.name);
+          addWorld(world);
+          toast.success(t('dropzone.added', { name: world.levelName }), { id: fw.name });
+        } catch (err) {
+          toast.error(
+            t('dropzone.parseError', { name: fw.name, error: (err as Error).message }),
+            { id: fw.name },
+          );
+        }
+      }
+
+      if (archives.length > 0) handleFiles(archives);
     } catch (err) {
       if ((err as DOMException).name !== 'AbortError') {
         toast.error(t('dropzone.folderError'));
       }
     }
-  }, [handleFiles, t]);
+  }, [handleFiles, t, addWorld]);
 
   return (
     <motion.div
